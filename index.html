@@ -42,7 +42,7 @@
         .header {
             background: linear-gradient(90deg, var(--secondary-color) 0%, var(--primary-color) 100%);
             padding: 12px;
-            border-radius: var(---border-radius);
+            border-radius: var(--border-radius);
             text-align: center;
             font-size: 1.3em;
             font-weight: 600;
@@ -53,7 +53,7 @@
             background: var(--primary-color);
             color: var(--text-color);
             border: none;
-            border-radius: var(---border-radius);
+            border-radius: var(--border-radius);
             cursor: pointer;
             font-weight: bold;
             width: 100%;
@@ -162,24 +162,6 @@
             margin-left: 10px;
         }
         .download-button:hover { background: #e65a50; }
-        .spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid #fff;
-            border-top: 2px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-left: 5px;
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
         @media (max-width: 480px) {
             body { padding: 10px; }
             .container { padding: 15px; }
@@ -340,14 +322,8 @@
             gdogContract = new web3.eth.Contract(erc20Abi, web3.utils.toChecksumAddress(gdogAddress));
         }
 
-        async function getNFTImage(tokenId) {
-            const imageUrl = `${IMAGE_BASE_URL}${tokenId}.jpg`;
-            try {
-                const response = await fetch(imageUrl, { method: 'HEAD' });
-                return response.ok ? imageUrl : DEFAULT_IMAGE;
-            } catch (error) {
-                return DEFAULT_IMAGE;
-            }
+        function getNFTImage(tokenId) {
+            return `${IMAGE_BASE_URL}${tokenId}.jpg`;
         }
 
         async function downloadNFTImage(tokenId) {
@@ -355,7 +331,7 @@
             const imageUrl = `${IMAGE_BASE_URL}${tokenId}.jpg`;
             try {
                 const response = await fetch(imageUrl);
-                if (!response.ok) throw new Error('图片不可访问');
+                if (!response.ok) throw new Error(`HTTP 错误: ${response.status}`);
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -367,7 +343,7 @@
                 window.URL.revokeObjectURL(url);
                 status.innerText = `NFT ${tokenId} 图片下载成功！`;
             } catch (error) {
-                status.innerText = `下载 NFT ${tokenId} 图片失败: ${error.message}`;
+                status.innerText = `下载 NFT ${tokenId} 图片失败: ${error.message}. 请检查 URL: ${imageUrl}`;
             }
         }
 
@@ -411,11 +387,11 @@
             try {
                 for (let i = 0; i < nftBalance; i++) {
                     const tokenId = await nftContract.methods.tokenOfOwnerByIndex(account, i).call();
-                    const imageUrl = await getNFTImage(tokenId);
+                    const imageUrl = getNFTImage(tokenId);
                     const li = document.createElement('li');
                     li.innerHTML = `
                         <input type="checkbox" class="nft-checkbox" value="${tokenId}">
-                        <img src="${imageUrl}" alt="NFT ${tokenId}" class="nft-image" onclick="window.open('${imageUrl}', '_blank')">
+                        <img src="${imageUrl}" alt="NFT ${tokenId}" class="nft-image" onerror="this.src='${DEFAULT_IMAGE}'" onclick="window.open('${imageUrl}', '_blank')">
                         Token ID: ${tokenId}
                         <button class="download-button" onclick="downloadNFTImage(${tokenId})">下载</button>
                     `;
@@ -423,7 +399,7 @@
                 }
                 document.getElementById('batchRedeemButton').disabled = false;
             } catch (error) {
-                nftList.innerHTML = '<li>查询 NFT 失败</li>';
+                nftList.innerHTML = '<li>查询 NFT 失败: ${error.message}</li>';
                 document.getElementById('batchRedeemButton').disabled = true;
             }
         }
