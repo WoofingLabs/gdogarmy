@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gdog Army NFT</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" href="https://woofswap.finance/image/tokens/star.png" type="image/x-icon" />
+    <style>
+        :root {
+            --primary-color: #ff9100;
+            --secondary-color: #ff6f61;
+            --gradient-bg: linear-gradient(180deg, #1e1e2f 0%, #2a2a3d 100%);
+            --card-bg: #2c2f48;
+            --input-bg: #373b5c;
+            --text-color: #ffffff;
+            --border-radius: 15px;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--gradient-bg);
+            color: var(--text-color);
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background: var(--card-bg);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border-radius: var(--border-radius);
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(90deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+            padding: 12px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .connect-section button {
+            padding: 12px;
+            background: var(--primary-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            transition: background 0.2s;
+            margin-bottom: 10px;
+        }
+        .connect-section button:hover { background: #e68a00; }
+        .input-box {
+            background: var(--input-bg);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin-bottom: 15px;
+        }
+        .input-box label {
+            display: block;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            background: var(--input-bg);
+            border: none;
+            border-radius: 10px;
+            color: var(--text-color);
+            font-size: 1em;
+        }
+        .balance-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            color: #ff9100;
+        }
+        .action-button {
+            padding: 15px;
+            background: var(--primary-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            transition: background 0.2s;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .action-button:disabled {
+            background: #4a4f7a;
+            cursor: not-allowed;
+        }
+        .action-button:hover:not(:disabled) { background: #e68a00; }
+        .status {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: var(--primary-color);
+            text-align: center;
+        }
+        .dog-section {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .dog-section img {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 10px;
+        }
+        .dog-message {
+            font-size: 0.9em;
+            color: var(--secondary-color);
+            font-style: italic;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #fff;
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 5px;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @media (max-width: 480px) {
+            body { padding: 10px; }
+            .container { padding: 15px; }
+            .header { font-size: 1.1em; }
+            .dog-section img { width: 50px; height: 50px; }
+            .dog-message { font-size: 0.8em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">Gdog Army NFT 操作</div>
+        <div class="connect-section">
+            <button id="connectWalletButton">连接钱包</button>
+            <div id="networkStatus" class="status">点击连接钱包...</div>
+        </div>
+        <div class="input-box">
+            <label>铸造 NFT 数量</label>
+            <input type="text" id="mintAmount" placeholder="输入铸造 NFT 数量">
+            <div class="balance-row"><span>GDOG 余额</span><span id="gdogBalance">余额: 0</span></div>
+            <div class="balance-row"><span>持有 NFT</span><span id="nftBalance">余额: 0</span></div>
+            <label>赎回/购买 NFT 的 Token ID</label>
+            <input type="text" id="tokenId" placeholder="输入 Token ID">
+            <button class="action-button" id="approveButton" disabled>授权 GDOG</button>
+            <button class="action-button" id="mintButton" disabled>铸造 NFT</button>
+            <button class="action-button" id="redeemButton" disabled>赎回 NFT</button>
+            <button class="action-button" id="buyButton" disabled>从合约购买 NFT</button>
+        </div>
+        <div class="dog-section">
+            <img src="https://woofswap.finance/image/tokens/star.png" alt="WSTAR">
+            <div class="dog-message" id="dogMessage">"Woof! 连接钱包以操作 NFT！"</div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
+    <script>
+        const nftAddress = '0x37f798E7b84592E68B3b0a38725C47AdBf24F181';
+        const gdogAddress = '0xA037355662d34D9B57dE209E22544a4862F5A30c';
+        const TOKENS_PER_NFT = '100000000000000000000000';
+
+        const nftAbi = [
+            { "inputs": [], "stateMutability": "nonpayable", "type": "constructor" },
+            { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "owner", "type": "address" }, { "indexed": true, "internalType": "address", "name": "approved", "type": "address" }, { "indexed": true, "internalType": "uint256", "name": "tokenId", "type": "uint256" }], "name": "Approval", "type": "event" },
+            { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "owner", "type": "address" }, { "indexed": true, "internalType": "address", "name": "operator", "type": "address" }, { "indexed": false, "internalType": "bool", "name": "approved", "type": "bool" }], "name": "ApprovalForAll", "type": "event" },
+            { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "previousOwner", "type": "address" }, { "indexed": true, "internalType": "address", "name": "newOwner", "type": "address" }], "name": "OwnershipTransferred", "type": "event" },
+            { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "from", "type": "address" }, { "indexed": true, "internalType": "address", "name": "to", "type": "address" }, { "indexed": true, "internalType": "uint256", "name": "tokenId", "type": "uint256" }], "name": "Transfer", "type": "event" },
+            { "inputs": [{ "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "tokenId", "type": "uint256" }], "name": "approve", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+            { "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+            { "inputs": [{ "internalType": "uint256", "name": "tokenId", "type": "uint256" }], "name": "getApproved", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" },
+            { "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "operator", "type": "address" }], "name": "isApprovedForAll", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" },
+            { "inputs": [{ "internalType": "uint256", "name": "numTokens", "type": "uint256" }], "name": "mintWithGDOG", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+            { "inputs": [{ "internalType": "uint256", "name": "tokenId", "type": "uint256" }], "name": "mintFromContract", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+            { "inputs": [], "name": "name", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
+            { "inputs": [], "name": "owner", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" },
+            { "inputs": [{ "internalType": "uint256", "name": "tokenId", "type": "uint256" }], "name": "ownerOf", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" },
+            { "inputs": [{ "internalType": "address", "name": "operator", "type": "address" }, { "internalType": "address", "name": "from", "type": "address" }, { "internalType": "uint256", "name": "tokenId", "type": "uint256" }, { "internalType": "bytes", "name": "data", "type": "bytes" }], "name": "onERC721Received", "outputs": [{ "internalType": "bytes4", "name": "", "type": "bytes4" }], "stateMutability": "pure", "type": "function" },
+            { "inputs": [{ "internalType": "uint256", "name": "tokenId", "type": "uint256" }], "name": "redeemGDOG", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+            { "inputs": [], "name": "renounceOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+            { "inputs": [{ "internalType": "address", "name": "from", "type": "address" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "tokenId", "type": "uint256" }], "name": "safeTransferFrom", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+            { "inputs": [{ "internalType": "address", "name": "from", "type": "address" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "tokenId", "type": "uint256" }, { "internalType": "bytes", "name": "data", "type": "bytes" }], "name": "safeTransferFrom", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+            { "inputs": [{ "internalType": "string", "name": "newBaseURI", "type": "string" }], "name": "setBaseURI", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+            { "inputs": [{ "internalType": "address", "name": "operator", "type": "address" }, { "internalType": "bool", "name": "approved", "type": "bool" }], "name": "setApprovalForAll", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+            { "inputs": [{ "internalType": "bytes4", "name": "interfaceId", "type": "bytes4" }], "name": "supportsInterface", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" },
+            { "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
+            { "inputs": [{ "internalType": "uint256", "name": "index", "type": "uint256" }], "name": "tokenByIndex", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+            { "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "uint256", "name": "index", "type": "uint256" }], "name": "tokenOfOwnerByIndex", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+            { "inputs": [{ "internalType": "uint256", "name": "tokenId", "type": "uint256" }], "name": "tokenURI", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
+            { "inputs": [], "name": "totalSupply", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+            { "inputs": [{ "internalType": "address", "name": "from", "type": "address" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "tokenId", "type": "uint256" }], "name": "transferFrom", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+            { "inputs": [{ "internalType": "address", "name": "newOwner", "type": "address" }], "name": "transferOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+            { "inputs": [], "name": "withdrawGDOG", "outputs": [], "stateMutability": "nonpayable", "type": "function" }
+        ];
+
+        const erc20Abi = [
+            { "constant": true, "inputs": [{ "name": "_owner", "type": "address" }], "name": "balanceOf", "outputs": [{ "name": "balance", "type": "uint256" }], "type": "function" },
+            { "constant": false, "inputs": [{ "name": "_spender", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "approve", "outputs": [{ "name": "success", "type": "bool" }], "type": "function" },
+            { "constant": true, "inputs": [{ "name": "_owner", "type": "address" }, { "name": "_spender", "type": "address" }], "name": "allowance", "outputs": [{ "name": "remaining", "type": "uint256" }], "type": "function" }
+        ];
+
+        const chains = {
+            RufusChain: {
+                chainId: 10088,
+                chainName: 'Gate Layer',
+                rpcUrl: 'https://gatelayer-mainnet.gatenode.cc',
+                blockExplorer: 'https://www.gatescan.org/gatelayer/',
+                nativeCurrency: { name: 'GT', symbol: 'GT', decimals: 18 }
+            }
+        };
+
+        let web3, account, nftContract, gdogContract;
+
+        const dogMessages = {
+            connectSuccess: ["Woof! 钱包已连接，准备操作 NFT！", "Arf! 连接成功，开始吧！", "Bark! 钱包就位，行动起来！"],
+            connectFail: ["Woof! 钱包连接失败，请重试！", "Arf! 无法连接钱包，再试一次！", "Bark! 连接出错，检查钱包！"],
+            approveStart: ["Woof! 正在授权 GDOG，稍等！", "Arf! 授权进行中！", "Bark! 授权 GDOG 中！"],
+            approveSuccess: ["Woof! GDOG 授权成功，准备铸造！", "Arf! 授权完成！", "Bark! 授权成功！"],
+            approveFail: ["Woof! 授权失败，请重试！", "Arf! 授权出错，检查钱包！", "Bark! 授权问题，请重试！"],
+            mintStart: ["Woof! 正在铸造 NFT，稍等！", "Arf! 铸造进行中！", "Bark! 正在创建 NFT！"],
+            mintSuccess: ["Woof! NFT 铸造成功！", "Arf! NFT 已创建！", "Bark! 成功铸造 NFT！"],
+            mintFail: ["Woof! 铸造失败，检查输入！", "Arf! 出了点问题，请重试！", "Bark! 铸造 NFT 失败！"],
+            redeemStart: ["Woof! 正在赎回 NFT，稍等！", "Arf! 赎回进行中！", "Bark! 正在处理赎回！"],
+            redeemSuccess: ["Woof! NFT 赎回成功！", "Arf! 赎回完成！", "Bark! 成功赎回 NFT！"],
+            redeemFail: ["Woof! 赎回失败，检查 Token ID！", "Arf! 赎回出错，请重试！", "Bark! 赎回问题，请检查！"],
+            buyStart: ["Woof! 正在从合约购买 NFT，稍等！", "Arf! 购买进行中！", "Bark! 正在获取 NFT！"],
+            buySuccess: ["Woof! NFT 购买成功！", "Arf! 购买完成！", "Bark! 成功购买 NFT！"],
+            buyFail: ["Woof! 购买失败，检查 Token ID！", "Arf! 购买出错，请重试！", "Bark! 购买问题，请检查！"],
+            invalidInput: ["Woof! 输入的数量或 Token ID 无效！", "Arf! 输入有误，检查一下！", "Bark! 请检查输入内容！"],
+            userDenied: ["Woof! 你取消了交易！", "Arf! 交易被取消，重新试试？", "Bark! 你拒绝了交易！"],
+            insufficientBalance: ["Woof! GDOG 余额不足！", "Arf! 余额不够，补充点吧！", "Bark! 需要更多 GDOG！"],
+            insufficientGas: ["Woof! GT 不足以支付 Gas 费用！", "Arf! Gas 费用不够，补充 GT！", "Bark! 需要更多 GT 用于 Gas！"],
+            insufficientAllowance: ["Woof! GDOG 未授权，请先授权！", "Arf! 需要授权 GDOG！", "Bark! 先授权 GDOG 再操作！"],
+            invalidTokenId: ["Woof! Token ID 无效或不属于你！", "Arf! 检查 Token ID 是否正确！", "Bark! Token ID 有误！"],
+            tokenNotInContract: ["Woof! 此 NFT 不在合约中！", "Arf! 无法购买，检查 Token ID！", "Bark! NFT 未在合约中！"]
+        };
+
+        function getRandomMessage(type) {
+            const messages = dogMessages[type];
+            return messages[Math.floor(Math.random() * messages.length)];
+        }
+
+        async function waitForTransaction(txHash) {
+            let receipt = null;
+            const maxAttempts = 30;
+            let attempts = 0;
+            while (attempts < maxAttempts) {
+                receipt = await web3.eth.getTransactionReceipt(txHash);
+                if (receipt) {
+                    if (receipt.status) return receipt;
+                    throw new Error(`交易 ${txHash} 失败`);
+                }
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                attempts++;
+            }
+            throw new Error(`交易 ${txHash} 未在 ${maxAttempts} 次尝试后确认`);
+        }
+
+        async function initializeWeb3() {
+            if (window.ethereum) {
+                web3 = new Web3(window.ethereum);
+                try {
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    account = (await web3.eth.getAccounts())[0];
+                    document.getElementById('connectWalletButton').innerText = `已连接: ${account.slice(0, 6)}...${account.slice(-4)}`;
+                    await switchNetwork('RufusChain');
+                    await initializeContracts();
+                    await checkBalances();
+                    document.getElementById('networkStatus').innerText = `已连接到 Gate Layer`;
+                    document.getElementById('dogMessage').innerText = getRandomMessage('connectSuccess');
+                } catch (error) {
+                    document.getElementById('networkStatus').innerText = '钱包连接失败';
+                    document.getElementById('dogMessage').innerText = getRandomMessage('connectFail');
+                }
+            } else {
+                document.getElementById('networkStatus').innerText = '请安装 MetaMask';
+                document.getElementById('dogMessage').innerText = 'Woof! 未找到 MetaMask！';
+            }
+        }
+
+        async function switchNetwork(chain) {
+            const chainConfig = chains[chain];
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: `0x${chainConfig.chainId.toString(16)}` }]
+                });
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: `0x${chainConfig.chainId.toString(16)}`,
+                            chainName: chainConfig.chainName,
+                            rpcUrls: [chainConfig.rpcUrl],
+                            nativeCurrency: chainConfig.nativeCurrency,
+                            blockExplorerUrls: [chainConfig.blockExplorer]
+                        }]
+                    });
+                } else {
+                    throw switchError;
+                }
+            }
+        }
+
+        async function initializeContracts() {
+            nftContract = new web3.eth.Contract(nftAbi, web3.utils.toChecksumAddress(nftAddress));
+            gdogContract = new web3.eth.Contract(erc20Abi, web3.utils.toChecksumAddress(gdogAddress));
+        }
+
+        async function checkBalances() {
+            if (!web3 || !account) {
+                document.getElementById('approveButton').disabled = true;
+                document.getElementById('mintButton').disabled = true;
+                document.getElementById('redeemButton').disabled = true;
+                document.getElementById('buyButton').disabled = true;
+                document.getElementById('gdogBalance').innerText = '余额: 0';
+                document.getElementById('nftBalance').innerText = '余额: 0';
+                return;
+            }
+            try {
+                const gdogBalance = await gdogContract.methods.balanceOf(account).call();
+                document.getElementById('gdogBalance').innerText = `余额: ${Number(web3.utils.fromWei(gdogBalance, 'ether')).toLocaleString()}`;
+                const nftBalance = await nftContract.methods.balanceOf(account).call();
+                document.getElementById('nftBalance').innerText = `余额: ${nftBalance}`;
+                await checkAuthorizationStatus();
+            } catch (error) {
+                document.getElementById('gdogBalance').innerText = '余额: 查询失败';
+                document.getElementById('nftBalance').innerText = '余额: 查询失败';
+                document.getElementById('approveButton').disabled = true;
+                document.getElementById('mintButton').disabled = true;
+                document.getElementById('redeemButton').disabled = true;
+                document.getElementById('buyButton').disabled = true;
+            }
+        }
+
+        async function checkAuthorizationStatus() {
+            if (!web3 || !account) {
+                document.getElementById('approveButton').disabled = true;
+                document.getElementById('mintButton').disabled = true;
+                document.getElementById('redeemButton').disabled = true;
+                document.getElementById('buyButton').disabled = true;
+                return;
+            }
+            const mintAmount = document.getElementById('mintAmount').value.trim();
+            const tokenId = document.getElementById('tokenId').value.trim();
+            try {
+                const totalTokens = web3.utils.toBN(mintAmount || '0').mul(web3.utils.toBN(TOKENS_PER_NFT));
+                const allowance = await gdogContract.methods.allowance(account, nftAddress).call();
+                const sufficientAllowance = web3.utils.toBN(allowance).gte(totalTokens);
+                document.getElementById('approveButton').disabled = mintAmount && !isNaN(mintAmount) && mintAmount > 0 ? !sufficientAllowance : true;
+                document.getElementById('mintButton').disabled = mintAmount && !isNaN(mintAmount) && mintAmount > 0 ? !sufficientAllowance : true;
+                document.getElementById('redeemButton').disabled = !tokenId || isNaN(tokenId);
+                document.getElementById('buyButton').disabled = !tokenId || isNaN(tokenId);
+                document.getElementById('networkStatus').innerText = sufficientAllowance ? "GDOG 已授权，准备铸造" : "请先授权 GDOG";
+            } catch (error) {
+                document.getElementById('networkStatus').innerText = "检查授权状态失败";
+                document.getElementById('dogMessage').innerText = getRandomMessage('approveFail');
+            }
+        }
+
+        async function approveToken() {
+            const status = document.getElementById('networkStatus');
+            const approveButton = document.getElementById('approveButton');
+            const dogMessage = document.getElementById('dogMessage');
+            const mintAmount = document.getElementById('mintAmount').value.trim();
+
+            if (!web3 || !account || !gdogContract) {
+                status.innerText = "请连接钱包或检查代币地址";
+                dogMessage.innerText = getRandomMessage('connectFail');
+                return;
+            }
+            if (!mintAmount || isNaN(mintAmount) || mintAmount <= 0) {
+                status.innerText = "请输入有效的铸造数量";
+                dogMessage.innerText = getRandomMessage('invalidInput');
+                return;
+            }
+
+            try {
+                approveButton.disabled = true;
+                approveButton.innerHTML = '授权中... <span class="spinner"></span>';
+                status.innerText = "正在授权 GDOG...";
+                dogMessage.innerText = getRandomMessage('approveStart');
+
+                const amountWei = web3.utils.toBN(mintAmount).mul(web3.utils.toBN(TOKENS_PER_NFT));
+                const gasPrice = await web3.eth.getGasPrice();
+                const estimatedGas = await gdogContract.methods.approve(nftAddress, amountWei).estimateGas({ from: account });
+                const nativeBalance = await web3.eth.getBalance(account);
+                const gasCost = web3.utils.toBN(gasPrice).mul(web3.utils.toBN(estimatedGas));
+                if (web3.utils.toBN(nativeBalance).lt(gasCost)) {
+                    status.innerText = "GT 不足以支付 Gas 费用";
+                    dogMessage.innerText = getRandomMessage('insufficientGas');
+                    return;
+                }
+
+                const tx = await gdogContract.methods.approve(nftAddress, amountWei).send({
+                    from: account,
+                    gas: web3.utils.toHex(Math.min(estimatedGas * 2, 1000000))
+                });
+                await waitForTransaction(tx.transactionHash);
+
+                status.innerText = "GDOG 授权成功！";
+                dogMessage.innerText = getRandomMessage('approveSuccess');
+                await checkAuthorizationStatus();
+            } catch (error) {
+                if (error.code === 4001) {
+                    status.innerText = "用户取消了授权";
+                    dogMessage.innerText = getRandomMessage('userDenied');
+                } else if (error.message.includes('insufficient funds for gas')) {
+                    status.innerText = "GT 不足以支付 Gas 费用";
+                    dogMessage.innerText = getRandomMessage('insufficientGas');
+                } else {
+                    status.innerText = "授权失败，请检查代币地址";
+                    dogMessage.innerText = getRandomMessage('approveFail');
+                }
+            } finally {
+                approveButton.disabled = false;
+                approveButton.innerHTML = '授权 GDOG';
+            }
+        }
+
+        async function mintNFT() {
+            const status = document.getElementById('networkStatus');
+            const mintButton = document.getElementById('mintButton');
+            const dogMessage = document.getElementById('dogMessage');
+            const mintAmount = document.getElementById('mintAmount').value.trim();
+
+            if (!web3 || !account) {
+                status.innerText = "请连接钱包";
+                dogMessage.innerText = getRandomMessage('connectFail');
+                return;
+            }
+            if (!mintAmount || isNaN(mintAmount) || mintAmount <= 0) {
+                status.innerText = "请输入有效的铸造数量";
+                dogMessage.innerText = getRandomMessage('invalidInput');
+                return;
+            }
+
+            try {
+                mintButton.disabled = true;
+                mintButton.innerHTML = '铸造中... <span class="spinner"></span>';
+                status.innerText = "检查余额和 Gas...";
+                dogMessage.innerText = getRandomMessage('mintStart');
+
+                const totalTokens = web3.utils.toBN(mintAmount).mul(web3.utils.toBN(TOKENS_PER_NFT));
+                const gdogBalance = await gdogContract.methods.balanceOf(account).call();
+                if (web3.utils.toBN(gdogBalance).lt(totalTokens)) {
+                    status.innerText = "GDOG 余额不足";
+                    dogMessage.innerText = getRandomMessage('insufficientBalance');
+                    return;
+                }
+
+                const allowance = await gdogContract.methods.allowance(account, nftAddress).call();
+                if (web3.utils.toBN(allowance).lt(totalTokens)) {
+                    status.innerText = "请先授权 GDOG";
+                    dogMessage.innerText = getRandomMessage('insufficientAllowance');
+                    return;
+                }
+
+                const gasPrice = await web3.eth.getGasPrice();
+                const estimatedGas = await nftContract.methods.mintWithGDOG(mintAmount).estimateGas({ from: account });
+                const nativeBalance = await web3.eth.getBalance(account);
+                const gasCost = web3.utils.toBN(gasPrice).mul(web3.utils.toBN(estimatedGas));
+                if (web3.utils.toBN(nativeBalance).lt(gasCost)) {
+                    status.innerText = "GT 不足以支付 Gas 费用";
+                    dogMessage.innerText = getRandomMessage('insufficientGas');
+                    return;
+                }
+
+                const tx = await nftContract.methods.mintWithGDOG(mintAmount).send({
+                    from: account,
+                    gas: web3.utils.toHex(Math.min(estimatedGas * 2, 3000000))
+                });
+                await waitForTransaction(tx.transactionHash);
+
+                status.innerText = "NFT 铸造成功！";
+                dogMessage.innerText = getRandomMessage('mintSuccess');
+                await checkBalances();
+            } catch (error) {
+                if (error.code === 4001) {
+                    status.innerText = "用户取消了交易";
+                    dogMessage.innerText = getRandomMessage('userDenied');
+                } else if (error.message.includes('insufficient funds for gas')) {
+                    status.innerText = "GT 不足以支付 Gas 费用";
+                    dogMessage.innerText = getRandomMessage('insufficientGas');
+                } else {
+                    status.innerText = "铸造失败: " + (error.message || "未知错误");
+                    dogMessage.innerText = getRandomMessage('mintFail');
+                }
+            } finally {
+                mintButton.disabled = false;
+                mintButton.innerHTML = '铸造 NFT';
+            }
+        }
+
+        async function redeemNFT() {
+            const status = document.getElementById('networkStatus');
+            const redeemButton = document.getElementById('redeemButton');
+            const dogMessage = document.getElementById('dogMessage');
+            const tokenId = document.getElementById('tokenId').value.trim();
+
+            if (!web3 || !account) {
+                status.innerText = "请连接钱包";
+                dogMessage.innerText = getRandomMessage('connectFail');
+                return;
+            }
+            if (!tokenId || isNaN(tokenId)) {
+                status.innerText = "请输入有效的 Token ID";
+                dogMessage.innerText = getRandomMessage('invalidInput');
+                return;
+            }
+
+            try {
+                redeemButton.disabled = true;
+                redeemButton.innerHTML = '赎回中... <span class="spinner"></span>';
+                status.innerText = "检查 Token ID 和 Gas...";
+                dogMessage.innerText = getRandomMessage('redeemStart');
+
+                const owner = await nftContract.methods.ownerOf(tokenId).call();
+                if (owner.toLowerCase() !== account.toLowerCase()) {
+                    status.innerText = "你不是此 NFT 的拥有者";
+                    dogMessage.innerText = getRandomMessage('invalidTokenId');
+                    return;
+                }
+
+                const gasPrice = await web3.eth.getGasPrice();
+                const estimatedGas = await nftContract.methods.redeemGDOG(tokenId).estimateGas({ from: account });
+                const nativeBalance = await web3.eth.getBalance(account);
+                const gasCost = web3.utils.toBN(gasPrice).mul(web3.utils.toBN(estimatedGas));
+                if (web3.utils.toBN(nativeBalance).lt(gasCost)) {
+                    status.innerText = "GT 不足以支付 Gas 费用";
+                    dogMessage.innerText = getRandomMessage('insufficientGas');
+                    return;
+                }
+
+                const tx = await nftContract.methods.redeemGDOG(tokenId).send({
+                    from: account,
+                    gas: web3.utils.toHex(Math.min(estimatedGas * 2, 3000000))
+                });
+                await waitForTransaction(tx.transactionHash);
+
+                status.innerText = "NFT 赎回成功！";
+                dogMessage.innerText = getRandomMessage('redeemSuccess');
+                await checkBalances();
+            } catch (error) {
+                if (error.code === 4001) {
+                    status.innerText = "用户取消了交易";
+                    dogMessage.innerText = getRandomMessage('userDenied');
+                } else if (error.message.includes('insufficient funds for gas')) {
+                    status.innerText = "GT 不足以支付 Gas 费用";
+                    dogMessage.innerText = getRandomMessage('insufficientGas');
+                } else {
+                    status.innerText = "赎回失败: " + (error.message || "未知错误");
+                    dogMessage.innerText = getRandomMessage('redeemFail');
+                }
+            } finally {
+                redeemButton.disabled = false;
+                redeemButton.innerHTML = '赎回 NFT';
+            }
+        }
+
+        async function buyNFT() {
+            const status = document.getElementById('networkStatus');
+            const buyButton = document.getElementById('buyButton');
+            const dogMessage = document.getElementById('dogMessage');
+            const tokenId = document.getElementById('tokenId').value.trim();
+
+            if (!web3 || !account) {
+                status.innerText = "请连接钱包";
+                dogMessage.innerText = getRandomMessage('connectFail');
+                return;
+            }
+            if (!tokenId || isNaN(tokenId)) {
+                status.innerText = "请输入有效的 Token ID";
+                dogMessage.innerText = getRandomMessage('invalidInput');
+                return;
+            }
+
+            try {
+                buyButton.disabled = true;
+                buyButton.innerHTML = '购买中... <span class="spinner"></span>';
+                status.innerText = "检查余额和 Gas...";
+                dogMessage.innerText = getRandomMessage('buyStart');
+
+                const owner = await nftContract.methods.ownerOf(tokenId).call();
+                if (owner.toLowerCase() !== nftAddress.toLowerCase()) {
+                    status.innerText = "此 NFT 不在合约中";
+                    dogMessage.innerText = getRandomMessage('tokenNotInContract');
+                    return;
+                }
+
+                const gdogBalance = await gdogContract.methods.balanceOf(account).call();
+                if (web3.utils.toBN(gdogBalance).lt(web3.utils.toBN(TOKENS_PER_NFT))) {
+                    status.innerText = "GDOG 余额不足";
+                    dogMessage.innerText = getRandomMessage('insufficientBalance');
+                    return;
+                }
+
+                const allowance = await gdogContract.methods.allowance(account, nftAddress).call();
+                if (web3.utils.toBN(allowance).lt(web3.utils.toBN(TOKENS_PER_NFT))) {
+                    status.innerText = "请先授权 GDOG";
+                    dogMessage.innerText = getRandomMessage('insufficientAllowance');
+                    return;
+                }
+
+                const gasPrice = await web3.eth.getGasPrice();
+                const estimatedGas = await nftContract.methods.mintFromContract(tokenId).estimateGas({ from: account });
+                const nativeBalance = await web3.eth.getBalance(account);
+                const gasCost = web3.utils.toBN(gasPrice).mul(web3.utils.toBN(estimatedGas));
+                if (web3.utils.toBN(nativeBalance).lt(gasCost)) {
+                    status.innerText = "GT 不足以支付 Gas 费用";
+                    dogMessage.innerText = getRandomMessage('insufficientGas');
+                    return;
+                }
+
+                const tx = await nftContract.methods.mintFromContract(tokenId).send({
+                    from: account,
+                    gas: web3.utils.toHex(Math.min(estimatedGas * 2, 3000000))
+                });
+                await waitForTransaction(tx.transactionHash);
+
+                status.innerText = "NFT 购买成功！";
+                dogMessage.innerText = getRandomMessage('buySuccess');
+                await checkBalances();
+            } catch (error) {
+                if (error.code === 4001) {
+                    status.innerText = "用户取消了交易";
+                    dogMessage.innerText = getRandomMessage('userDenied');
+                } else if (error.message.includes('insufficient funds for gas')) {
+                    status.innerText = "GT 不足以支付 Gas 费用";
+                    dogMessage.innerText = getRandomMessage('insufficientGas');
+                } else {
+                    status.innerText = "购买失败: " + (error.message || "未知错误");
+                    dogMessage.innerText = getRandomMessage('buyFail');
+                }
+            } finally {
+                buyButton.disabled = false;
+                buyButton.innerHTML = '从合约购买 NFT';
+            }
+        }
+
+        document.getElementById('connectWalletButton').addEventListener('click', initializeWeb3);
+        document.getElementById('approveButton').addEventListener('click', approveToken);
+        document.getElementById('mintButton').addEventListener('click', mintNFT);
+        document.getElementById('redeemButton').addEventListener('click', redeemNFT);
+        document.getElementById('buyButton').addEventListener('click', buyNFT);
+        document.getElementById('mintAmount').addEventListener('input', checkAuthorizationStatus);
+        document.getElementById('tokenId').addEventListener('input', checkAuthorizationStatus);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkBalances();
+            checkAuthorizationStatus();
+        });
+    </script>
+</body>
+</html>
