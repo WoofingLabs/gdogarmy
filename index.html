@@ -133,7 +133,7 @@
         }
         .nft-list ul {
             list-style: none;
-            max-height: 150px;
+            max-height: 200px;
             overflow-y: auto;
         }
         .nft-list li {
@@ -144,6 +144,24 @@
         .nft-list input[type="checkbox"] {
             margin-right: 10px;
         }
+        .nft-image {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .download-button {
+            padding: 5px 10px;
+            background: var(--secondary-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+        .download-button:hover { background: #e65a50; }
         .spinner {
             display: inline-block;
             width: 16px;
@@ -167,6 +185,7 @@
             .container { padding: 15px; }
             .header { font-size: 1.1em; }
             .dog-section img { width: 50px; height: 50px; }
+            .nft-image { width: 30px; height: 30px; }
         }
     </style>
 </head>
@@ -202,6 +221,7 @@
         const nftAddress = '0x37f798E7b84592E68B3b0a38725C47AdBf24F181';
         const gdogAddress = '0xA037355662d34D9B57dE209E22544a4862F5A30c';
         const TOKENS_PER_NFT = '100000000000000000000000';
+        const DEFAULT_IMAGE = 'https://www.woofswap.finance/image/tokens/gdog.png';
 
         const nftAbi = [
             { "inputs": [], "stateMutability": "nonpayable", "type": "constructor" },
@@ -319,6 +339,36 @@
             gdogContract = new web3.eth.Contract(erc20Abi, web3.utils.toChecksumAddress(gdogAddress));
         }
 
+        async function fetchNFTImage(tokenId) {
+            try {
+                const tokenURI = await nftContract.methods.tokenURI(tokenId).call();
+                if (!tokenURI) return DEFAULT_IMAGE;
+                const response = await fetch(tokenURI);
+                const metadata = await response.json();
+                return metadata.image || DEFAULT_IMAGE;
+            } catch (error) {
+                return DEFAULT_IMAGE;
+            }
+        }
+
+        async function downloadNFTImage(tokenId, imageUrl) {
+            try {
+                const response = await fetch(imageUrl);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `GdogArmy_NFT_${tokenId}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                document.getElementById('networkStatus').innerText = `NFT ${tokenId} 图片下载成功！`;
+            } catch (error) {
+                document.getElementById('networkStatus').innerText = `下载 NFT ${tokenId} 图片失败`;
+            }
+        }
+
         async function checkBalances() {
             if (!web3 || !account) {
                 document.getElementById('mintButton').disabled = true;
@@ -359,8 +409,14 @@
             try {
                 for (let i = 0; i < nftBalance; i++) {
                     const tokenId = await nftContract.methods.tokenOfOwnerByIndex(account, i).call();
+                    const imageUrl = await fetchNFTImage(tokenId);
                     const li = document.createElement('li');
-                    li.innerHTML = `<input type="checkbox" class="nft-checkbox" value="${tokenId}"> Token ID: ${tokenId}`;
+                    li.innerHTML = `
+                        <input type="checkbox" class="nft-checkbox" value="${tokenId}">
+                        <img src="${imageUrl}" alt="NFT ${tokenId}" class="nft-image" onclick="window.open('${imageUrl}', '_blank')">
+                        Token ID: ${tokenId}
+                        <button class="download-button" onclick="downloadNFTImage(${tokenId}, '${imageUrl}')">下载</button>
+                    `;
                     nftList.appendChild(li);
                 }
                 document.getElementById('batchRedeemButton').disabled = false;
@@ -633,8 +689,8 @@
                 batchRedeemButton.innerHTML = '赎回中... <span class="spinner"></span>';
                 status.innerText = "正在批量赎回 NFT...";
 
+                let nativeBalance = await web3.eth.getBalance(account);
                 const gasPrice = await web3.eth.getGasPrice();
-                const nativeBalance = await web3.eth.getBalance(account);
 
                 for (const checkbox of checkboxes) {
                     const tokenId = checkbox.value;
@@ -657,7 +713,7 @@
                         gas: web3.utils.toHex(Math.min(estimatedGas * 2, 3000000))
                     });
                     await waitForTransaction(tx.transactionHash);
-                    nativeBalance = await web3.eth.getBalance(account); // 更新余额
+                    nativeBalance = await web3.eth.getBalance(account);
                 }
 
                 status.innerText = "批量赎回成功！";
