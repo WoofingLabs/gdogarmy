@@ -121,6 +121,29 @@
             height: 60px;
             margin-bottom: 10px;
         }
+        .nft-list {
+            background: var(--input-bg);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin-top: 20px;
+        }
+        .nft-list h3 {
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+        .nft-list ul {
+            list-style: none;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .nft-list li {
+            display: flex;
+            align-items: center;
+            padding: 5px 0;
+        }
+        .nft-list input[type="checkbox"] {
+            margin-right: 10px;
+        }
         .spinner {
             display: inline-block;
             width: 16px;
@@ -164,6 +187,11 @@
             <button class="action-button" id="mintButton" disabled>铸造 NFT</button>
             <button class="action-button" id="redeemButton" disabled>赎回 NFT</button>
             <button class="action-button" id="buyButton" disabled>从合约购买 NFT</button>
+        </div>
+        <div class="nft-list">
+            <h3>我的 NFT</h3>
+            <ul id="nftList"></ul>
+            <button class="action-button" id="batchRedeemButton" disabled>一键赎回选中 NFT</button>
         </div>
         <div class="dog-section">
             <img src="https://www.woofswap.finance/image/tokens/gdog.png" alt="GDOG">
@@ -296,8 +324,10 @@
                 document.getElementById('mintButton').disabled = true;
                 document.getElementById('redeemButton').disabled = true;
                 document.getElementById('buyButton').disabled = true;
+                document.getElementById('batchRedeemButton').disabled = true;
                 document.getElementById('gdogBalance').innerText = '余额: 0';
                 document.getElementById('nftBalance').innerText = '余额: 0';
+                document.getElementById('nftList').innerHTML = '<li>未连接钱包</li>';
                 return;
             }
             try {
@@ -305,13 +335,38 @@
                 document.getElementById('gdogBalance').innerText = `余额: ${Number(web3.utils.fromWei(gdogBalance, 'ether')).toLocaleString()}`;
                 const nftBalance = await nftContract.methods.balanceOf(account).call();
                 document.getElementById('nftBalance').innerText = `余额: ${nftBalance}`;
+                await updateNFTList(nftBalance);
                 await checkMintButtonStatus();
             } catch (error) {
                 document.getElementById('gdogBalance').innerText = '余额: 查询失败';
                 document.getElementById('nftBalance').innerText = '余额: 查询失败';
+                document.getElementById('nftList').innerHTML = '<li>查询失败</li>';
                 document.getElementById('mintButton').disabled = true;
                 document.getElementById('redeemButton').disabled = true;
                 document.getElementById('buyButton').disabled = true;
+                document.getElementById('batchRedeemButton').disabled = true;
+            }
+        }
+
+        async function updateNFTList(nftBalance) {
+            const nftList = document.getElementById('nftList');
+            nftList.innerHTML = '';
+            if (!web3 || !account || nftBalance == 0) {
+                nftList.innerHTML = '<li>暂无 NFT</li>';
+                document.getElementById('batchRedeemButton').disabled = true;
+                return;
+            }
+            try {
+                for (let i = 0; i < nftBalance; i++) {
+                    const tokenId = await nftContract.methods.tokenOfOwnerByIndex(account, i).call();
+                    const li = document.createElement('li');
+                    li.innerHTML = `<input type="checkbox" class="nft-checkbox" value="${tokenId}"> Token ID: ${tokenId}`;
+                    nftList.appendChild(li);
+                }
+                document.getElementById('batchRedeemButton').disabled = false;
+            } catch (error) {
+                nftList.innerHTML = '<li>查询 NFT 失败</li>';
+                document.getElementById('batchRedeemButton').disabled = true;
             }
         }
 
@@ -320,6 +375,7 @@
                 document.getElementById('mintButton').disabled = true;
                 document.getElementById('redeemButton').disabled = true;
                 document.getElementById('buyButton').disabled = true;
+                document.getElementById('batchRedeemButton').disabled = true;
                 return;
             }
             const mintAmount = document.getElementById('mintAmount').value.trim();
@@ -558,10 +614,73 @@
             }
         }
 
+        async function batchRedeemNFT() {
+            const status = document.getElementById('networkStatus');
+            const batchRedeemButton = document.getElementById('batchRedeemButton');
+            const checkboxes = document.querySelectorAll('.nft-checkbox:checked');
+
+            if (!web3 || !account) {
+                status.innerText = "请连接钱包";
+                return;
+            }
+            if (checkboxes.length === 0) {
+                status.innerText = "请选择至少一个 NFT";
+                return;
+            }
+
+            try {
+                batchRedeemButton.disabled = true;
+                batchRedeemButton.innerHTML = '赎回中... <span class="spinner"></span>';
+                status.innerText = "正在批量赎回 NFT...";
+
+                const gasPrice = await web3.eth.getGasPrice();
+                const nativeBalance = await web3.eth.getBalance(account);
+
+                for (const checkbox of checkboxes) {
+                    const tokenId = checkbox.value;
+
+                    const owner = await nftContract.methods.ownerOf(tokenId).call();
+                    if (owner.toLowerCase() !== account.toLowerCase()) {
+                        status.innerText = `Token ID ${tokenId} 不是你的 NFT`;
+                        return;
+                    }
+
+                    const estimatedGas = await nftContract.methods.redeemGDOG(tokenId).estimateGas({ from: account });
+                    const gasCost = web3.utils.toBN(gasPrice).mul(web3.utils.toBN(estimatedGas));
+                    if (web3.utils.toBN(nativeBalance).lt(gasCost)) {
+                        status.innerText = "GT 不足以支付 Gas 费用";
+                        return;
+                    }
+
+                    const tx = await nftContract.methods.redeemGDOG(tokenId).send({
+                        from: account,
+                        gas: web3.utils.toHex(Math.min(estimatedGas * 2, 3000000))
+                    });
+                    await waitForTransaction(tx.transactionHash);
+                    nativeBalance = await web3.eth.getBalance(account); // 更新余额
+                }
+
+                status.innerText = "批量赎回成功！";
+                await checkBalances();
+            } catch (error) {
+                if (error.code === 4001) {
+                    status.innerText = "用户取消了交易";
+                } else if (error.message.includes('insufficient funds for gas')) {
+                    status.innerText = "GT 不足以支付 Gas 费用";
+                } else {
+                    status.innerText = "批量赎回失败: " + (error.message || "未知错误");
+                }
+            } finally {
+                batchRedeemButton.disabled = false;
+                batchRedeemButton.innerHTML = '一键赎回选中 NFT';
+            }
+        }
+
         document.getElementById('connectWalletButton').addEventListener('click', initializeWeb3);
         document.getElementById('mintButton').addEventListener('click', mintNFT);
         document.getElementById('redeemButton').addEventListener('click', redeemNFT);
         document.getElementById('buyButton').addEventListener('click', buyNFT);
+        document.getElementById('batchRedeemButton').addEventListener('click', batchRedeemNFT);
         document.getElementById('mintAmount').addEventListener('input', checkMintButtonStatus);
         document.getElementById('tokenId').addEventListener('input', checkMintButtonStatus);
 
