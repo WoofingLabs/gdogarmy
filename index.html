@@ -42,7 +42,7 @@
         .header {
             background: linear-gradient(90deg, var(--secondary-color) 0%, var(--primary-color) 100%);
             padding: 12px;
-            border-radius: var(--border-radius);
+            border-radius: var(---border-radius);
             text-align: center;
             font-size: 1.3em;
             font-weight: 600;
@@ -53,7 +53,7 @@
             background: var(--primary-color);
             color: var(--text-color);
             border: none;
-            border-radius: var(--border-radius);
+            border-radius: var(---border-radius);
             cursor: pointer;
             font-weight: bold;
             width: 100%;
@@ -221,6 +221,7 @@
         const nftAddress = '0x37f798E7b84592E68B3b0a38725C47AdBf24F181';
         const gdogAddress = '0xA037355662d34D9B57dE209E22544a4862F5A30c';
         const TOKENS_PER_NFT = '100000000000000000000000';
+        const IMAGE_BASE_URL = 'https://www.gdoggate.com/nft/';
         const DEFAULT_IMAGE = 'https://www.woofswap.finance/image/tokens/gdog.png';
 
         const nftAbi = [
@@ -339,33 +340,34 @@
             gdogContract = new web3.eth.Contract(erc20Abi, web3.utils.toChecksumAddress(gdogAddress));
         }
 
-        async function fetchNFTImage(tokenId) {
+        async function getNFTImage(tokenId) {
+            const imageUrl = `${IMAGE_BASE_URL}${tokenId}.jpg`;
             try {
-                const tokenURI = await nftContract.methods.tokenURI(tokenId).call();
-                if (!tokenURI) return DEFAULT_IMAGE;
-                const response = await fetch(tokenURI);
-                const metadata = await response.json();
-                return metadata.image || DEFAULT_IMAGE;
+                const response = await fetch(imageUrl, { method: 'HEAD' });
+                return response.ok ? imageUrl : DEFAULT_IMAGE;
             } catch (error) {
                 return DEFAULT_IMAGE;
             }
         }
 
-        async function downloadNFTImage(tokenId, imageUrl) {
+        async function downloadNFTImage(tokenId) {
+            const status = document.getElementById('networkStatus');
+            const imageUrl = `${IMAGE_BASE_URL}${tokenId}.jpg`;
             try {
                 const response = await fetch(imageUrl);
+                if (!response.ok) throw new Error('图片不可访问');
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `GdogArmy_NFT_${tokenId}.png`;
+                a.download = `GdogArmy_NFT_${tokenId}.jpg`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
-                document.getElementById('networkStatus').innerText = `NFT ${tokenId} 图片下载成功！`;
+                status.innerText = `NFT ${tokenId} 图片下载成功！`;
             } catch (error) {
-                document.getElementById('networkStatus').innerText = `下载 NFT ${tokenId} 图片失败`;
+                status.innerText = `下载 NFT ${tokenId} 图片失败: ${error.message}`;
             }
         }
 
@@ -409,13 +411,13 @@
             try {
                 for (let i = 0; i < nftBalance; i++) {
                     const tokenId = await nftContract.methods.tokenOfOwnerByIndex(account, i).call();
-                    const imageUrl = await fetchNFTImage(tokenId);
+                    const imageUrl = await getNFTImage(tokenId);
                     const li = document.createElement('li');
                     li.innerHTML = `
                         <input type="checkbox" class="nft-checkbox" value="${tokenId}">
                         <img src="${imageUrl}" alt="NFT ${tokenId}" class="nft-image" onclick="window.open('${imageUrl}', '_blank')">
                         Token ID: ${tokenId}
-                        <button class="download-button" onclick="downloadNFTImage(${tokenId}, '${imageUrl}')">下载</button>
+                        <button class="download-button" onclick="downloadNFTImage(${tokenId})">下载</button>
                     `;
                     nftList.appendChild(li);
                 }
