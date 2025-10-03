@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gdog Army NFT</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-    <link rel="shortcut icon" href="https://woofswap.finance/image/tokens/star.png" type="image/x-icon" />
+    <link rel="shortcut icon" href="https://www.woofswap.finance/image/tokens/gdog.png" type="image/x-icon" />
     <style>
         :root {
             --primary-color: #ff9100;
@@ -121,11 +121,6 @@
             height: 60px;
             margin-bottom: 10px;
         }
-        .dog-message {
-            font-size: 0.9em;
-            color: var(--secondary-color);
-            font-style: italic;
-        }
         .spinner {
             display: inline-block;
             width: 16px;
@@ -149,7 +144,6 @@
             .container { padding: 15px; }
             .header { font-size: 1.1em; }
             .dog-section img { width: 50px; height: 50px; }
-            .dog-message { font-size: 0.8em; }
         }
     </style>
 </head>
@@ -167,14 +161,12 @@
             <div class="balance-row"><span>持有 NFT</span><span id="nftBalance">余额: 0</span></div>
             <label>赎回/购买 NFT 的 Token ID</label>
             <input type="text" id="tokenId" placeholder="输入 Token ID">
-            <button class="action-button" id="approveButton" disabled>授权 GDOG</button>
             <button class="action-button" id="mintButton" disabled>铸造 NFT</button>
             <button class="action-button" id="redeemButton" disabled>赎回 NFT</button>
             <button class="action-button" id="buyButton" disabled>从合约购买 NFT</button>
         </div>
         <div class="dog-section">
-            <img src="https://woofswap.finance/image/tokens/star.png" alt="WSTAR">
-            <div class="dog-message" id="dogMessage">"Woof! 连接钱包以操作 NFT！"</div>
+            <img src="https://www.woofswap.finance/image/tokens/gdog.png" alt="GDOG">
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
@@ -234,35 +226,6 @@
 
         let web3, account, nftContract, gdogContract;
 
-        const dogMessages = {
-            connectSuccess: ["Woof! 钱包已连接，准备操作 NFT！", "Arf! 连接成功，开始吧！", "Bark! 钱包就位，行动起来！"],
-            connectFail: ["Woof! 钱包连接失败，请重试！", "Arf! 无法连接钱包，再试一次！", "Bark! 连接出错，检查钱包！"],
-            approveStart: ["Woof! 正在授权 GDOG，稍等！", "Arf! 授权进行中！", "Bark! 授权 GDOG 中！"],
-            approveSuccess: ["Woof! GDOG 授权成功，准备铸造！", "Arf! 授权完成！", "Bark! 授权成功！"],
-            approveFail: ["Woof! 授权失败，请重试！", "Arf! 授权出错，检查钱包！", "Bark! 授权问题，请重试！"],
-            mintStart: ["Woof! 正在铸造 NFT，稍等！", "Arf! 铸造进行中！", "Bark! 正在创建 NFT！"],
-            mintSuccess: ["Woof! NFT 铸造成功！", "Arf! NFT 已创建！", "Bark! 成功铸造 NFT！"],
-            mintFail: ["Woof! 铸造失败，检查输入！", "Arf! 出了点问题，请重试！", "Bark! 铸造 NFT 失败！"],
-            redeemStart: ["Woof! 正在赎回 NFT，稍等！", "Arf! 赎回进行中！", "Bark! 正在处理赎回！"],
-            redeemSuccess: ["Woof! NFT 赎回成功！", "Arf! 赎回完成！", "Bark! 成功赎回 NFT！"],
-            redeemFail: ["Woof! 赎回失败，检查 Token ID！", "Arf! 赎回出错，请重试！", "Bark! 赎回问题，请检查！"],
-            buyStart: ["Woof! 正在从合约购买 NFT，稍等！", "Arf! 购买进行中！", "Bark! 正在获取 NFT！"],
-            buySuccess: ["Woof! NFT 购买成功！", "Arf! 购买完成！", "Bark! 成功购买 NFT！"],
-            buyFail: ["Woof! 购买失败，检查 Token ID！", "Arf! 购买出错，请重试！", "Bark! 购买问题，请检查！"],
-            invalidInput: ["Woof! 输入的数量或 Token ID 无效！", "Arf! 输入有误，检查一下！", "Bark! 请检查输入内容！"],
-            userDenied: ["Woof! 你取消了交易！", "Arf! 交易被取消，重新试试？", "Bark! 你拒绝了交易！"],
-            insufficientBalance: ["Woof! GDOG 余额不足！", "Arf! 余额不够，补充点吧！", "Bark! 需要更多 GDOG！"],
-            insufficientGas: ["Woof! GT 不足以支付 Gas 费用！", "Arf! Gas 费用不够，补充 GT！", "Bark! 需要更多 GT 用于 Gas！"],
-            insufficientAllowance: ["Woof! GDOG 未授权，请先授权！", "Arf! 需要授权 GDOG！", "Bark! 先授权 GDOG 再操作！"],
-            invalidTokenId: ["Woof! Token ID 无效或不属于你！", "Arf! 检查 Token ID 是否正确！", "Bark! Token ID 有误！"],
-            tokenNotInContract: ["Woof! 此 NFT 不在合约中！", "Arf! 无法购买，检查 Token ID！", "Bark! NFT 未在合约中！"]
-        };
-
-        function getRandomMessage(type) {
-            const messages = dogMessages[type];
-            return messages[Math.floor(Math.random() * messages.length)];
-        }
-
         async function waitForTransaction(txHash) {
             let receipt = null;
             const maxAttempts = 30;
@@ -290,14 +253,11 @@
                     await initializeContracts();
                     await checkBalances();
                     document.getElementById('networkStatus').innerText = `已连接到 Gate Layer`;
-                    document.getElementById('dogMessage').innerText = getRandomMessage('connectSuccess');
                 } catch (error) {
-                    document.getElementById('networkStatus').innerText = '钱包连接失败';
-                    document.getElementById('dogMessage').innerText = getRandomMessage('connectFail');
+                    document.getElementById('networkStatus').innerText = '钱包连接失败，请重试或检查 MetaMask';
                 }
             } else {
                 document.getElementById('networkStatus').innerText = '请安装 MetaMask';
-                document.getElementById('dogMessage').innerText = 'Woof! 未找到 MetaMask！';
             }
         }
 
@@ -333,7 +293,6 @@
 
         async function checkBalances() {
             if (!web3 || !account) {
-                document.getElementById('approveButton').disabled = true;
                 document.getElementById('mintButton').disabled = true;
                 document.getElementById('redeemButton').disabled = true;
                 document.getElementById('buyButton').disabled = true;
@@ -346,20 +305,18 @@
                 document.getElementById('gdogBalance').innerText = `余额: ${Number(web3.utils.fromWei(gdogBalance, 'ether')).toLocaleString()}`;
                 const nftBalance = await nftContract.methods.balanceOf(account).call();
                 document.getElementById('nftBalance').innerText = `余额: ${nftBalance}`;
-                await checkAuthorizationStatus();
+                await checkMintButtonStatus();
             } catch (error) {
                 document.getElementById('gdogBalance').innerText = '余额: 查询失败';
                 document.getElementById('nftBalance').innerText = '余额: 查询失败';
-                document.getElementById('approveButton').disabled = true;
                 document.getElementById('mintButton').disabled = true;
                 document.getElementById('redeemButton').disabled = true;
                 document.getElementById('buyButton').disabled = true;
             }
         }
 
-        async function checkAuthorizationStatus() {
+        async function checkMintButtonStatus() {
             if (!web3 || !account) {
-                document.getElementById('approveButton').disabled = true;
                 document.getElementById('mintButton').disabled = true;
                 document.getElementById('redeemButton').disabled = true;
                 document.getElementById('buyButton').disabled = true;
@@ -367,43 +324,18 @@
             }
             const mintAmount = document.getElementById('mintAmount').value.trim();
             const tokenId = document.getElementById('tokenId').value.trim();
-            try {
-                const totalTokens = web3.utils.toBN(mintAmount || '0').mul(web3.utils.toBN(TOKENS_PER_NFT));
-                const allowance = await gdogContract.methods.allowance(account, nftAddress).call();
-                const sufficientAllowance = web3.utils.toBN(allowance).gte(totalTokens);
-                document.getElementById('approveButton').disabled = mintAmount && !isNaN(mintAmount) && mintAmount > 0 ? !sufficientAllowance : true;
-                document.getElementById('mintButton').disabled = mintAmount && !isNaN(mintAmount) && mintAmount > 0 ? !sufficientAllowance : true;
-                document.getElementById('redeemButton').disabled = !tokenId || isNaN(tokenId);
-                document.getElementById('buyButton').disabled = !tokenId || isNaN(tokenId);
-                document.getElementById('networkStatus').innerText = sufficientAllowance ? "GDOG 已授权，准备铸造" : "请先授权 GDOG";
-            } catch (error) {
-                document.getElementById('networkStatus').innerText = "检查授权状态失败";
-                document.getElementById('dogMessage').innerText = getRandomMessage('approveFail');
-            }
+            document.getElementById('mintButton').disabled = !mintAmount || isNaN(mintAmount) || mintAmount <= 0;
+            document.getElementById('redeemButton').disabled = !tokenId || isNaN(tokenId);
+            document.getElementById('buyButton').disabled = !tokenId || isNaN(tokenId);
         }
 
-        async function approveToken() {
+        async function approveToken(mintAmount) {
             const status = document.getElementById('networkStatus');
-            const approveButton = document.getElementById('approveButton');
-            const dogMessage = document.getElementById('dogMessage');
-            const mintAmount = document.getElementById('mintAmount').value.trim();
-
-            if (!web3 || !account || !gdogContract) {
-                status.innerText = "请连接钱包或检查代币地址";
-                dogMessage.innerText = getRandomMessage('connectFail');
-                return;
-            }
-            if (!mintAmount || isNaN(mintAmount) || mintAmount <= 0) {
-                status.innerText = "请输入有效的铸造数量";
-                dogMessage.innerText = getRandomMessage('invalidInput');
-                return;
-            }
+            const mintButton = document.getElementById('mintButton');
 
             try {
-                approveButton.disabled = true;
-                approveButton.innerHTML = '授权中... <span class="spinner"></span>';
+                mintButton.innerHTML = '授权中... <span class="spinner"></span>';
                 status.innerText = "正在授权 GDOG...";
-                dogMessage.innerText = getRandomMessage('approveStart');
 
                 const amountWei = web3.utils.toBN(mintAmount).mul(web3.utils.toBN(TOKENS_PER_NFT));
                 const gasPrice = await web3.eth.getGasPrice();
@@ -412,8 +344,7 @@
                 const gasCost = web3.utils.toBN(gasPrice).mul(web3.utils.toBN(estimatedGas));
                 if (web3.utils.toBN(nativeBalance).lt(gasCost)) {
                     status.innerText = "GT 不足以支付 Gas 费用";
-                    dogMessage.innerText = getRandomMessage('insufficientGas');
-                    return;
+                    return false;
                 }
 
                 const tx = await gdogContract.methods.approve(nftAddress, amountWei).send({
@@ -421,64 +352,56 @@
                     gas: web3.utils.toHex(Math.min(estimatedGas * 2, 1000000))
                 });
                 await waitForTransaction(tx.transactionHash);
-
                 status.innerText = "GDOG 授权成功！";
-                dogMessage.innerText = getRandomMessage('approveSuccess');
-                await checkAuthorizationStatus();
+                return true;
             } catch (error) {
                 if (error.code === 4001) {
                     status.innerText = "用户取消了授权";
-                    dogMessage.innerText = getRandomMessage('userDenied');
                 } else if (error.message.includes('insufficient funds for gas')) {
                     status.innerText = "GT 不足以支付 Gas 费用";
-                    dogMessage.innerText = getRandomMessage('insufficientGas');
                 } else {
                     status.innerText = "授权失败，请检查代币地址";
-                    dogMessage.innerText = getRandomMessage('approveFail');
                 }
+                return false;
             } finally {
-                approveButton.disabled = false;
-                approveButton.innerHTML = '授权 GDOG';
+                mintButton.innerHTML = '铸造 NFT';
             }
         }
 
         async function mintNFT() {
             const status = document.getElementById('networkStatus');
             const mintButton = document.getElementById('mintButton');
-            const dogMessage = document.getElementById('dogMessage');
             const mintAmount = document.getElementById('mintAmount').value.trim();
 
             if (!web3 || !account) {
                 status.innerText = "请连接钱包";
-                dogMessage.innerText = getRandomMessage('connectFail');
                 return;
             }
             if (!mintAmount || isNaN(mintAmount) || mintAmount <= 0) {
                 status.innerText = "请输入有效的铸造数量";
-                dogMessage.innerText = getRandomMessage('invalidInput');
                 return;
             }
 
             try {
                 mintButton.disabled = true;
-                mintButton.innerHTML = '铸造中... <span class="spinner"></span>';
+                mintButton.innerHTML = '检查中... <span class="spinner"></span>';
                 status.innerText = "检查余额和 Gas...";
-                dogMessage.innerText = getRandomMessage('mintStart');
 
                 const totalTokens = web3.utils.toBN(mintAmount).mul(web3.utils.toBN(TOKENS_PER_NFT));
                 const gdogBalance = await gdogContract.methods.balanceOf(account).call();
                 if (web3.utils.toBN(gdogBalance).lt(totalTokens)) {
                     status.innerText = "GDOG 余额不足";
-                    dogMessage.innerText = getRandomMessage('insufficientBalance');
                     return;
                 }
 
                 const allowance = await gdogContract.methods.allowance(account, nftAddress).call();
                 if (web3.utils.toBN(allowance).lt(totalTokens)) {
-                    status.innerText = "请先授权 GDOG";
-                    dogMessage.innerText = getRandomMessage('insufficientAllowance');
-                    return;
+                    const approved = await approveToken(mintAmount);
+                    if (!approved) return;
                 }
+
+                mintButton.innerHTML = '铸造中... <span class="spinner"></span>';
+                status.innerText = "正在铸造 NFT...";
 
                 const gasPrice = await web3.eth.getGasPrice();
                 const estimatedGas = await nftContract.methods.mintWithGDOG(mintAmount).estimateGas({ from: account });
@@ -486,7 +409,6 @@
                 const gasCost = web3.utils.toBN(gasPrice).mul(web3.utils.toBN(estimatedGas));
                 if (web3.utils.toBN(nativeBalance).lt(gasCost)) {
                     status.innerText = "GT 不足以支付 Gas 费用";
-                    dogMessage.innerText = getRandomMessage('insufficientGas');
                     return;
                 }
 
@@ -497,18 +419,14 @@
                 await waitForTransaction(tx.transactionHash);
 
                 status.innerText = "NFT 铸造成功！";
-                dogMessage.innerText = getRandomMessage('mintSuccess');
                 await checkBalances();
             } catch (error) {
                 if (error.code === 4001) {
                     status.innerText = "用户取消了交易";
-                    dogMessage.innerText = getRandomMessage('userDenied');
                 } else if (error.message.includes('insufficient funds for gas')) {
                     status.innerText = "GT 不足以支付 Gas 费用";
-                    dogMessage.innerText = getRandomMessage('insufficientGas');
                 } else {
                     status.innerText = "铸造失败: " + (error.message || "未知错误");
-                    dogMessage.innerText = getRandomMessage('mintFail');
                 }
             } finally {
                 mintButton.disabled = false;
@@ -519,17 +437,14 @@
         async function redeemNFT() {
             const status = document.getElementById('networkStatus');
             const redeemButton = document.getElementById('redeemButton');
-            const dogMessage = document.getElementById('dogMessage');
             const tokenId = document.getElementById('tokenId').value.trim();
 
             if (!web3 || !account) {
                 status.innerText = "请连接钱包";
-                dogMessage.innerText = getRandomMessage('connectFail');
                 return;
             }
             if (!tokenId || isNaN(tokenId)) {
                 status.innerText = "请输入有效的 Token ID";
-                dogMessage.innerText = getRandomMessage('invalidInput');
                 return;
             }
 
@@ -537,12 +452,10 @@
                 redeemButton.disabled = true;
                 redeemButton.innerHTML = '赎回中... <span class="spinner"></span>';
                 status.innerText = "检查 Token ID 和 Gas...";
-                dogMessage.innerText = getRandomMessage('redeemStart');
 
                 const owner = await nftContract.methods.ownerOf(tokenId).call();
                 if (owner.toLowerCase() !== account.toLowerCase()) {
                     status.innerText = "你不是此 NFT 的拥有者";
-                    dogMessage.innerText = getRandomMessage('invalidTokenId');
                     return;
                 }
 
@@ -552,7 +465,6 @@
                 const gasCost = web3.utils.toBN(gasPrice).mul(web3.utils.toBN(estimatedGas));
                 if (web3.utils.toBN(nativeBalance).lt(gasCost)) {
                     status.innerText = "GT 不足以支付 Gas 费用";
-                    dogMessage.innerText = getRandomMessage('insufficientGas');
                     return;
                 }
 
@@ -563,18 +475,14 @@
                 await waitForTransaction(tx.transactionHash);
 
                 status.innerText = "NFT 赎回成功！";
-                dogMessage.innerText = getRandomMessage('redeemSuccess');
                 await checkBalances();
             } catch (error) {
                 if (error.code === 4001) {
                     status.innerText = "用户取消了交易";
-                    dogMessage.innerText = getRandomMessage('userDenied');
                 } else if (error.message.includes('insufficient funds for gas')) {
                     status.innerText = "GT 不足以支付 Gas 费用";
-                    dogMessage.innerText = getRandomMessage('insufficientGas');
                 } else {
                     status.innerText = "赎回失败: " + (error.message || "未知错误");
-                    dogMessage.innerText = getRandomMessage('redeemFail');
                 }
             } finally {
                 redeemButton.disabled = false;
@@ -585,17 +493,14 @@
         async function buyNFT() {
             const status = document.getElementById('networkStatus');
             const buyButton = document.getElementById('buyButton');
-            const dogMessage = document.getElementById('dogMessage');
             const tokenId = document.getElementById('tokenId').value.trim();
 
             if (!web3 || !account) {
                 status.innerText = "请连接钱包";
-                dogMessage.innerText = getRandomMessage('connectFail');
                 return;
             }
             if (!tokenId || isNaN(tokenId)) {
                 status.innerText = "请输入有效的 Token ID";
-                dogMessage.innerText = getRandomMessage('invalidInput');
                 return;
             }
 
@@ -603,27 +508,23 @@
                 buyButton.disabled = true;
                 buyButton.innerHTML = '购买中... <span class="spinner"></span>';
                 status.innerText = "检查余额和 Gas...";
-                dogMessage.innerText = getRandomMessage('buyStart');
 
                 const owner = await nftContract.methods.ownerOf(tokenId).call();
                 if (owner.toLowerCase() !== nftAddress.toLowerCase()) {
                     status.innerText = "此 NFT 不在合约中";
-                    dogMessage.innerText = getRandomMessage('tokenNotInContract');
                     return;
                 }
 
                 const gdogBalance = await gdogContract.methods.balanceOf(account).call();
                 if (web3.utils.toBN(gdogBalance).lt(web3.utils.toBN(TOKENS_PER_NFT))) {
                     status.innerText = "GDOG 余额不足";
-                    dogMessage.innerText = getRandomMessage('insufficientBalance');
                     return;
                 }
 
                 const allowance = await gdogContract.methods.allowance(account, nftAddress).call();
                 if (web3.utils.toBN(allowance).lt(web3.utils.toBN(TOKENS_PER_NFT))) {
-                    status.innerText = "请先授权 GDOG";
-                    dogMessage.innerText = getRandomMessage('insufficientAllowance');
-                    return;
+                    const approved = await approveToken('1');
+                    if (!approved) return;
                 }
 
                 const gasPrice = await web3.eth.getGasPrice();
@@ -632,7 +533,6 @@
                 const gasCost = web3.utils.toBN(gasPrice).mul(web3.utils.toBN(estimatedGas));
                 if (web3.utils.toBN(nativeBalance).lt(gasCost)) {
                     status.innerText = "GT 不足以支付 Gas 费用";
-                    dogMessage.innerText = getRandomMessage('insufficientGas');
                     return;
                 }
 
@@ -643,18 +543,14 @@
                 await waitForTransaction(tx.transactionHash);
 
                 status.innerText = "NFT 购买成功！";
-                dogMessage.innerText = getRandomMessage('buySuccess');
                 await checkBalances();
             } catch (error) {
                 if (error.code === 4001) {
                     status.innerText = "用户取消了交易";
-                    dogMessage.innerText = getRandomMessage('userDenied');
                 } else if (error.message.includes('insufficient funds for gas')) {
                     status.innerText = "GT 不足以支付 Gas 费用";
-                    dogMessage.innerText = getRandomMessage('insufficientGas');
                 } else {
                     status.innerText = "购买失败: " + (error.message || "未知错误");
-                    dogMessage.innerText = getRandomMessage('buyFail');
                 }
             } finally {
                 buyButton.disabled = false;
@@ -663,16 +559,15 @@
         }
 
         document.getElementById('connectWalletButton').addEventListener('click', initializeWeb3);
-        document.getElementById('approveButton').addEventListener('click', approveToken);
         document.getElementById('mintButton').addEventListener('click', mintNFT);
         document.getElementById('redeemButton').addEventListener('click', redeemNFT);
         document.getElementById('buyButton').addEventListener('click', buyNFT);
-        document.getElementById('mintAmount').addEventListener('input', checkAuthorizationStatus);
-        document.getElementById('tokenId').addEventListener('input', checkAuthorizationStatus);
+        document.getElementById('mintAmount').addEventListener('input', checkMintButtonStatus);
+        document.getElementById('tokenId').addEventListener('input', checkMintButtonStatus);
 
         document.addEventListener('DOMContentLoaded', () => {
             checkBalances();
-            checkAuthorizationStatus();
+            checkMintButtonStatus();
         });
     </script>
 </body>
